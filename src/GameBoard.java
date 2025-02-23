@@ -1,15 +1,18 @@
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 public class GameBoard {
     private ArrayList<Dot> dots;
     private ArrayList<Ghost> ghosts;
     private PacMan pacMan;
+    private Random random;
 
     public GameBoard() {
         dots = new ArrayList<>();
         ghosts = new ArrayList<>();
         pacMan = new PacMan(0, 0);
+        random = new Random();
         initializeBoard();
     }
 
@@ -29,15 +32,30 @@ public class GameBoard {
                 System.out.println("Final Score: " + pacMan.getScore());
                 System.exit(0);
             }
+            if (ghost.checkCollision(pacMan)) {
+                System.out.println("Game Over! Ghost collided with Pac-Man.");
+                System.out.println("Final Score: " + pacMan.getScore());
+                System.exit(0);
+            }
         }
         for (Dot dot : dots) {
             pacMan.eatDot(dot);
+            if (!dot.isVisible()) {
+                repositionDot(dot);
+            }
         }
         if (isGameOver()) {
             System.out.println("Game Over! All dots have been eaten.");
             System.out.println("Final Score: " + pacMan.getScore());
             System.exit(0);
         }
+    }
+
+    public void repositionDot(Dot dot) {
+        int newX = random.nextInt(150);
+        int newY = random.nextInt(150);
+        dot.setPosition(newX, newY);
+        dot.setVisible(true);
     }
 
     public boolean isGameOver() {
@@ -47,6 +65,17 @@ public class GameBoard {
             }
         }
         return true;
+    }
+
+    public void printDotsAndGhostsPositions() {
+        System.out.println("Dots Positions:");
+        for (Dot dot : getDots()) {
+            System.out.println("Dot at (" + dot.getX() + ", " + dot.getY() + "), Visible: " + dot.isVisible());
+        }
+        System.out.println("Ghosts Positions:");
+        for (Ghost ghost : getGhosts()) {
+            System.out.println("Ghost at (" + ghost.getX() + ", " + ghost.getY() + ")");
+        }
     }
 
     public PacMan getPacMan() {
@@ -82,6 +111,7 @@ public class GameBoard {
             }
             
             gameBoard.updateGame();
+            gameBoard.printDotsAndGhostsPositions(); // Printing positions for debugging
         }
         
         scanner.close();
