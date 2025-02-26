@@ -21,6 +21,7 @@ public class Ghost {
         return y;
     }
 
+
     public void move() {
         Random random = new Random();
         int randomDirection = random.nextInt(4);
