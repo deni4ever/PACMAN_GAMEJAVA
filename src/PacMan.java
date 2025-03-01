@@ -1,117 +1,143 @@
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
 
+/**
+ * Represents the player-controlled Pac-Man character.
+ */
 public class PacMan {
-    private int x;
-    private int y;
-    private Direction direction;
-    private int score;
-    private static final int MOVEMENT_SPEED = 5;
-    private static final int COLLISION_THRESHOLD = 20;
-    private Image pacman1, pacman2up, pacman3up, pacman4up;
-    private Image pacman2down, pacman3down, pacman4down;
-    private Image pacman2left, pacman3left, pacman4left;
-    private Image pacman2right, pacman3right, pacman4right;
-    private int pacmanAnimPos = 0;
-    private int view_dx = -1, view_dy = 0;
-
+    private int x, y;           // Position coordinates
+    private Direction direction; // Current direction
+    private int score;          // Player's score
+    private final int SIZE = 30; // Size of Pac-Man
+    private int mouthAngle;     // Angle for animating Pac-Man's mouth
+    private boolean mouthClosing; // Flag for mouth animation direction
+    
+    /**
+     * Constructs a new Pac-Man at the specified position.
+     * @param x The x-coordinate
+     * @param y The y-coordinate
+     */
     public PacMan(int x, int y) {
         this.x = x;
         this.y = y;
-        this.direction = Direction.LEFT;
+        this.direction = Direction.RIGHT;
         this.score = 0;
-        loadImages();
+        this.mouthAngle = 45;
+        this.mouthClosing = false;
     }
-
-    private void drawPacman(Graphics2D g2d) {
-        if (view_dx == -1) {
-            drawPacmanLeft(g2d);
-        } else if (view_dx == 1) {
-            drawPacmanRight(g2d);
-        } else if (view_dy == -1) {
-            drawPacmanUp(g2d);
-        } else {
-            drawPacmanDown(g2d);
-        }
-    }
-
-    private void drawPacmanUp(Graphics2D g2d) {
-        g2d.drawImage(getPacmanImage(pacman2up, pacman3up, pacman4up), x, y, null);
-    }
-
-    private void drawPacmanDown(Graphics2D g2d) {
-        g2d.drawImage(getPacmanImage(pacman2down, pacman3down, pacman4down), x, y, null);
-    }
-
-    private void drawPacmanLeft(Graphics2D g2d) {
-        g2d.drawImage(getPacmanImage(pacman2left, pacman3left, pacman4left), x, y, null);
-    }
-
-    private void drawPacmanRight(Graphics2D g2d) {
-        g2d.drawImage(getPacmanImage(pacman2right, pacman3right, pacman4right), x, y, null);
-    }
-
-    private Image getPacmanImage(Image img1, Image img2, Image img3) {
-        switch (pacmanAnimPos) {
-            case 1: return img1;
-            case 2: return img2;
-            case 3: return img3;
-            default: return pacman1;
-        }
-    }
-
-    private void loadImages() {
-        pacman1 = new ImageIcon("src/resources/images/pacman.png").getImage();
-        pacman2up = new ImageIcon("src/resources/images/up1.png").getImage();
-        pacman3up = new ImageIcon("src/resources/images/up2.png").getImage();
-        pacman4up = new ImageIcon("src/resources/images/up3.png").getImage();
-        pacman2down = new ImageIcon("src/resources/images/down1.png").getImage();
-        pacman3down = new ImageIcon("src/resources/images/down2.png").getImage();
-        pacman4down = new ImageIcon("src/resources/images/down3.png").getImage();
-        pacman2left = new ImageIcon("src/resources/images/left1.png").getImage();
-        pacman3left = new ImageIcon("src/resources/images/left2.png").getImage();
-        pacman4left = new ImageIcon("src/resources/images/left3.png").getImage();
-        pacman2right = new ImageIcon("src/resources/images/right1.png").getImage();
-        pacman3right = new ImageIcon("src/resources/images/right2.png").getImage();
-        pacman4right = new ImageIcon("src/resources/images/right3.png").getImage();
-    }
-
-    public void move() {
+    
+    /**
+     * Moves Pac-Man in the current direction.
+     * @param gameWidth Width of the game board
+     * @param gameHeight Height of the game board
+     */
+    public void move(int gameWidth, int gameHeight) {
+        int speed = 5;
+        
+        // Update position based on direction
         switch (direction) {
-            case UP -> y -= MOVEMENT_SPEED;
-            case DOWN -> y += MOVEMENT_SPEED;
-            case LEFT -> x -= MOVEMENT_SPEED;
-            case RIGHT -> x += MOVEMENT_SPEED;
+            case UP:
+                y = Math.max(y - speed, 0);
+                break;
+            case DOWN:
+                y = Math.min(y + speed, gameHeight - SIZE);
+                break;
+            case LEFT:
+                x = Math.max(x - speed, 0);
+                break;
+            case RIGHT:
+                x = Math.min(x + speed, gameWidth - SIZE);
+                break;
+        }
+        
+        // Animate mouth
+        if (mouthClosing) {
+            mouthAngle -= 5;
+            if (mouthAngle <= 5) {
+                mouthClosing = false;
+            }
+        } else {
+            mouthAngle += 5;
+            if (mouthAngle >= 45) {
+                mouthClosing = true;
+            }
         }
     }
-
-
+    
+    /**
+     * Increases score when eating a dot.
+     * @param dot The dot being eaten
+     */
     public void eatDot(Dot dot) {
-        if (dot.isVisible() && x == dot.getX() && y == dot.getY()) {
+        if (dot.isVisible()) {
             score += 10;
             dot.setVisible(false);
         }
     }
-
+    
+    /**
+     * Checks collision with a ghost.
+     * @param ghost The ghost to check collision with
+     * @return true if collision detected, false otherwise
+     */
     public boolean checkCollision(Ghost ghost) {
-        int dx = x - ghost.getX();
-        int dy = y - ghost.getY();
-        return Math.sqrt(dx * dx + dy * dy) < COLLISION_THRESHOLD;
+        // Simple collision detection using bounding boxes
+        int ghostSize = 30;
+        return (x < ghost.getX() + ghostSize &&
+                x + SIZE > ghost.getX() &&
+                y < ghost.getY() + ghostSize &&
+                y + SIZE > ghost.getY());
     }
-
-    public void setDirection(Direction direction) {
-        this.direction = direction;
+    
+    /**
+     * Draws Pac-Man on the screen.
+     * @param g Graphics context
+     */
+    public void draw(Graphics g) {
+        g.setColor(Color.YELLOW);
+        
+        // Calculate start and end angles based on direction
+        int startAngle = 0;
+        switch (direction) {
+            case RIGHT:
+                startAngle = mouthAngle / 2;
+                break;
+            case DOWN:
+                startAngle = 90 - mouthAngle / 2;
+                break;
+            case LEFT:
+                startAngle = 180 - mouthAngle / 2;
+                break;
+            case UP:
+                startAngle = 270 - mouthAngle / 2;
+                break;
+        }
+        
+        g.fillArc(x, y, SIZE, SIZE, startAngle, 360 - mouthAngle);
     }
-
-    public int getScore() {
-        return score;
-    }
-
+    
+    // Getters and setters
     public int getX() {
         return x;
     }
-
+    
     public int getY() {
         return y;
+    }
+    
+    public Direction getDirection() {
+        return direction;
+    }
+    
+    public void setDirection(Direction direction) {
+        this.direction = direction;
+    }
+    
+    public int getScore() {
+        return score;
+    }
+    
+    public int getSize() {
+        return SIZE;
     }
 }
